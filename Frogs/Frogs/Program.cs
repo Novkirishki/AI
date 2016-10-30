@@ -22,7 +22,8 @@ namespace Frogs
             
             beginningStep[(beginningStep.Length - 1) / 2] = '_';
             stepsToSolution = new Stack<string>();
-            FindSolution(new string(beginningStep));
+            stepsToSolution.Push(new string(beginningStep));
+            FindSolution(stepsToSolution);
             PrintSteps(stepsToSolution);
         }
 
@@ -34,9 +35,9 @@ namespace Frogs
             }
         }
 
-        private static bool FindSolution(string currentStep)
+        private static bool FindSolution(Stack<string> stepsToSolution)
         {
-            stepsToSolution.Push(currentStep);
+            var currentStep = stepsToSolution.Peek();
 
             if (IsFinalStep(currentStep))
                 return true;
@@ -49,24 +50,22 @@ namespace Frogs
                 {
                     if (i + 1 < currentStep.Length && currentStep[i + 1] == '_')
                     {
-                        currentStep = SwapFrogs(currentStep, i, i + 1);
-                        result = FindSolution(currentStep);
-                        if (result)
-                            return result;
-
-                        currentStep = SwapFrogs(currentStep, i, i + 1);
+                        var tempStep = SwapFrogs(currentStep, i, i + 1);
+                        stepsToSolution.Push(tempStep);
+                        if (FindSolution(stepsToSolution))
+                            return true;
+                        
                         stepsToSolution.Pop();
                     }
 
 
                     if (i + 2 < currentStep.Length && currentStep[i + 2] == '_')
                     {
-                        currentStep = SwapFrogs(currentStep, i, i + 2);
-                        result = FindSolution(currentStep);
-                        if (result)
-                            return result;
+                        var tempStep = SwapFrogs(currentStep, i, i + 2);
+                        stepsToSolution.Push(tempStep);
+                        if (FindSolution(stepsToSolution))
+                            return true;
 
-                        currentStep = SwapFrogs(currentStep, i, i + 2);
                         stepsToSolution.Pop();
                     }
                 }
@@ -75,23 +74,21 @@ namespace Frogs
                 {
                     if (i - 1 >= 0 && currentStep[i - 1] == '_')
                     {
-                        currentStep = SwapFrogs(currentStep, i, i - 1);
-                        result = FindSolution(currentStep);
-                        if (result)
-                            return result;
+                        var tempStep = SwapFrogs(currentStep, i, i - 1);
+                        stepsToSolution.Push(tempStep);
+                        if (FindSolution(stepsToSolution))
+                            return true;
 
-                        currentStep = SwapFrogs(currentStep, i, i - 1);
                         stepsToSolution.Pop();
                     }
 
                     if (i - 2 >= 0 && currentStep[i - 2] == '_')
                     {
-                        currentStep = SwapFrogs(currentStep, i, i - 2);
-                        result = FindSolution(currentStep);
-                        if (result)
-                            return result;
+                        var tempStep = SwapFrogs(currentStep, i, i - 2);
+                        stepsToSolution.Push(tempStep);
+                        if (FindSolution(stepsToSolution))
+                            return true;
 
-                        currentStep = SwapFrogs(currentStep, i, i - 2);
                         stepsToSolution.Pop();
                     }
                 }
@@ -111,7 +108,7 @@ namespace Frogs
             return true;
         }
 
-        static string SwapFrogs(string currentStep, int frogPosition, int emptySpacePosition)
+        private static string SwapFrogs(string currentStep, int frogPosition, int emptySpacePosition)
         {
             char[] array = currentStep.ToCharArray();
             char temp = array[frogPosition];
