@@ -34,40 +34,72 @@ namespace KnapsackProblem
 
         private static void GenerateNewPopulation(List<Hromozome> parents)
         {
-            GenerateMutations(parents);
+            population.Clear();
+            for (int i = 0; i < Weights.Count(); i++)
+            {
+                var firstParent = parents[RAND.Next(0, parents.Count())];
+                var secondParent = parents[RAND.Next(0, parents.Count())];
+                Mutate(firstParent);
+                Select(firstParent, secondParent);
+                Crossover(firstParent, secondParent);
+                Mutate(secondParent);
+            }
         }
 
-        private static void GenerateMutations(List<Hromozome> parents)
+        private static void CreateChild(bool[] representation)
         {
-            for (int i = 0; i < Weights.Count() * INITIAL_POPULATION_MULTIPLIER; i++)
+            var hromozome = new Hromozome
             {
-                var randomParent = parents[RAND.Next(0, parents.Count())];
-                var randomIndex = RAND.Next(0, randomParent.Representation.Count());
-                var childWeight = 0;
-                var childValue = 0;
-                var childRepresentation = (bool[])randomParent.Representation.Clone();
-                childRepresentation[randomIndex] = !randomParent.Representation[randomIndex];
-                if (randomParent.Representation[randomIndex] == true)
-                {
-                    childWeight = randomParent.Weight - Weights[randomIndex];
-                    childValue = randomParent.Value - Values[randomIndex];
-                }
-                else
-                {
-                    childWeight = randomParent.Weight + Weights[randomIndex];
-                    childValue = randomParent.Value + Values[randomIndex];
-                }
+                Representation = representation,
+                Weight = 0,
+                Value = 0
+             };
 
-                if (childWeight <= MaxWeight)
+            CalculateWeightAndValue(hromozome);
+        }
+
+        private static void CalculateWeightAndValue(Hromozome hromozome)
+        {
+            for (int j = 0; j < hromozome.Representation.Count(); j++)
+            {
+                if (hromozome.Representation[j])
                 {
-                    population.Add(new Hromozome
-                    {
-                        Representation = childRepresentation,
-                        Weight = childWeight,
-                        Value = childValue
-                    });
+                    hromozome.Weight += Weights[j];
+                    hromozome.Value += Values[j];
                 }
             }
+
+            if (hromozome.Weight <= MaxWeight)
+            {
+                population.Add(hromozome);
+            }
+        }
+
+        private static void Mutate(Hromozome parent)
+        {
+            var randomIndex = RAND.Next(0, parent.Representation.Count());
+            var childRepresentation = (bool[])parent.Representation.Clone();
+            childRepresentation[randomIndex] = !parent.Representation[randomIndex];
+            CreateChild(childRepresentation);
+        }
+
+        private static void Select(Hromozome firstParent, Hromozome secondParent)
+        {
+            var childRepresentation = (bool[])firstParent.Representation.Clone();
+            for (int i = 0; i < childRepresentation.Count(); i++)
+            {
+                childRepresentation[i] &= secondParent.Representation[i];
+            }
+
+            CreateChild(childRepresentation);
+        }
+
+        private static void Crossover(Hromozome firstParent, Hromozome secondParent)
+        {
+            var randomIndex = RAND.Next(0, firstParent.Representation.Count());
+            var childRepresentation = (bool[])firstParent.Representation.Clone();
+            Array.Copy(secondParent.Representation, randomIndex, childRepresentation, randomIndex, childRepresentation.Count() - randomIndex);
+            CreateChild(childRepresentation);
         }
 
         private static void ReadInput()
