@@ -16,9 +16,6 @@ namespace TicTacToe
                 { ' ', ' ', ' ' },
                 { ' ', ' ', ' ' },
             };
-
-            Console.WriteLine(IsGameOver(board));
-            PrintBoard(board);
             Console.WriteLine(Play(board, 'x', 'o', false));
         }
 
@@ -38,9 +35,10 @@ namespace TicTacToe
                             Array.Copy(board, newBoard, board.Length);
                             newBoard[i, j] = currentPlayerSymbol;
                             var winner = Play(newBoard, otherPlayerSymbol, currentPlayerSymbol, true);
+
                             int outcome = 0;
                             if (winner == currentPlayerSymbol)
-                                outcome = 1;
+                                return Play(newBoard, otherPlayerSymbol, currentPlayerSymbol, isSimulation);
                             else if (winner == otherPlayerSymbol)
                                 outcome = -1;
 
@@ -57,8 +55,10 @@ namespace TicTacToe
 
                 possibleMoves.Sort();
                 var move = possibleMoves.First();
-                board[move.X, move.Y] = move.Symbol;
-                return Play(board, otherPlayerSymbol, currentPlayerSymbol, isSimulation);
+                var boardCopy = new char[board.GetLength(0), board.GetLength(1)];
+                Array.Copy(board, boardCopy, board.Length);
+                boardCopy[move.X, move.Y] = move.Symbol;
+                return Play(boardCopy, otherPlayerSymbol, currentPlayerSymbol, isSimulation);
             }
 
             if (!isSimulation)
