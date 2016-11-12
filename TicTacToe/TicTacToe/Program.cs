@@ -24,6 +24,23 @@ namespace TicTacToe
             var winnerSymbol = IsGameOver(board);
             if (winnerSymbol == 'n' && !IsBoardFull(board))
             {
+                if (!isSimulation && currentPlayerSymbol == 'x')
+                {
+                    PrintBoard(board);
+                    int x;
+                    int y;
+                    do
+                    {
+                        Console.WriteLine("Enter coordinates: ");
+                        var coordinates = Console.ReadLine().Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                        x = int.Parse(coordinates[0]);
+                        y = int.Parse(coordinates[1]);
+                    }
+                    while (!(-1 < x && x < board.GetLength(0) && -1 < y && y < board.GetLength(1) && board[x, y] == ' '));
+
+                    board[x, y] = currentPlayerSymbol;
+                    return Play(board, otherPlayerSymbol, currentPlayerSymbol, false);
+                }
                 var possibleMoves = new List<Move>();
                 for (int i = 0; i < board.GetLength(0); i++)
                 {
