@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace TicTacToe
 {
@@ -16,7 +15,78 @@ namespace TicTacToe
                 { ' ', ' ', ' ' },
                 { ' ', ' ', ' ' },
             };
-            Console.WriteLine(Play(board, 'x', 'o', false));
+            var winnerSymbol = Play(board, 'x', 'o', false);
+            string winner;
+            switch (winnerSymbol)
+            {
+                case 'x':
+                    winner = "Player";
+                    break;
+                case 'o':
+                    winner = "Computer";
+                    break;
+                default:
+                    winner = "Nobody";
+                    break;
+            }
+            Console.WriteLine("{0} wins!", winner);
+        }
+
+        private static char PlayerMove(char[,] board, char currentPlayerSymbol, char otherPlayerSymbol)
+        {
+            PrintBoard(board);
+            int x;
+            int y;
+            do
+            {
+                Console.WriteLine("Enter coordinates: ");
+                var coordinates = Console.ReadLine().Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                x = int.Parse(coordinates[0]);
+                y = int.Parse(coordinates[1]);
+            }
+            while (!(-1 < x && x < board.GetLength(0) && -1 < y && y < board.GetLength(1) && board[x, y] == ' '));
+
+            board[x, y] = currentPlayerSymbol;
+            return Play(board, otherPlayerSymbol, currentPlayerSymbol, false);
+        }
+
+        private static char AIMove(char[,] board, char currentPlayerSymbol, char otherPlayerSymbol, bool isSimulation)
+        {
+            var possibleMoves = new List<Move>();
+            for (int i = 0; i < board.GetLength(0); i++)
+            {
+                for (int j = 0; j < board.GetLength(1); j++)
+                {
+                    if (board[i, j] == ' ')
+                    {
+                        var newBoard = new char[board.GetLength(0), board.GetLength(1)];
+                        Array.Copy(board, newBoard, board.Length);
+                        newBoard[i, j] = currentPlayerSymbol;
+                        var winner = Play(newBoard, otherPlayerSymbol, currentPlayerSymbol, true);
+
+                        int outcome = 0;
+                        if (winner == currentPlayerSymbol)
+                            return Play(newBoard, otherPlayerSymbol, currentPlayerSymbol, isSimulation);
+                        else if (winner == otherPlayerSymbol)
+                            outcome = -1;
+
+                        possibleMoves.Add(new Move
+                        {
+                            Outcome = outcome,
+                            X = i,
+                            Y = j,
+                            Symbol = currentPlayerSymbol
+                        });
+                    }
+                }
+            }
+
+            possibleMoves.Sort();
+            var move = possibleMoves.First();
+            var boardCopy = new char[board.GetLength(0), board.GetLength(1)];
+            Array.Copy(board, boardCopy, board.Length);
+            boardCopy[move.X, move.Y] = move.Symbol;
+            return Play(boardCopy, otherPlayerSymbol, currentPlayerSymbol, isSimulation);
         }
 
         private static char Play(char[,] board, char currentPlayerSymbol, char otherPlayerSymbol, bool isSimulation)
@@ -26,56 +96,10 @@ namespace TicTacToe
             {
                 if (!isSimulation && currentPlayerSymbol == 'x')
                 {
-                    PrintBoard(board);
-                    int x;
-                    int y;
-                    do
-                    {
-                        Console.WriteLine("Enter coordinates: ");
-                        var coordinates = Console.ReadLine().Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                        x = int.Parse(coordinates[0]);
-                        y = int.Parse(coordinates[1]);
-                    }
-                    while (!(-1 < x && x < board.GetLength(0) && -1 < y && y < board.GetLength(1) && board[x, y] == ' '));
-
-                    board[x, y] = currentPlayerSymbol;
-                    return Play(board, otherPlayerSymbol, currentPlayerSymbol, false);
-                }
-                var possibleMoves = new List<Move>();
-                for (int i = 0; i < board.GetLength(0); i++)
-                {
-                    for (int j = 0; j < board.GetLength(1); j++)
-                    {
-                        if (board[i, j] == ' ')
-                        {
-                            var newBoard = new char[board.GetLength(0), board.GetLength(1)];
-                            Array.Copy(board, newBoard, board.Length);
-                            newBoard[i, j] = currentPlayerSymbol;
-                            var winner = Play(newBoard, otherPlayerSymbol, currentPlayerSymbol, true);
-
-                            int outcome = 0;
-                            if (winner == currentPlayerSymbol)
-                                return Play(newBoard, otherPlayerSymbol, currentPlayerSymbol, isSimulation);
-                            else if (winner == otherPlayerSymbol)
-                                outcome = -1;
-
-                            possibleMoves.Add(new Move
-                            {
-                                Outcome = outcome,
-                                X = i,
-                                Y = j,
-                                Symbol = currentPlayerSymbol
-                            });
-                        }
-                    }
+                    return PlayerMove(board, currentPlayerSymbol, otherPlayerSymbol);
                 }
 
-                possibleMoves.Sort();
-                var move = possibleMoves.First();
-                var boardCopy = new char[board.GetLength(0), board.GetLength(1)];
-                Array.Copy(board, boardCopy, board.Length);
-                boardCopy[move.X, move.Y] = move.Symbol;
-                return Play(boardCopy, otherPlayerSymbol, currentPlayerSymbol, isSimulation);
+                return AIMove(board, currentPlayerSymbol, otherPlayerSymbol, isSimulation);
             }
 
             if (!isSimulation)
