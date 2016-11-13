@@ -15,6 +15,16 @@ namespace TicTacToe
                 { ' ', ' ', ' ' },
                 { ' ', ' ', ' ' },
             };
+
+            // A larger board for testing if algorithm works on a scale > 3x3
+            //var board = new char[,]
+            //{
+            //    { 'x', 'x', 'o', 'o' },
+            //    { ' ', ' ', 'o', 'x' },
+            //    { ' ', ' ', ' ', 'o' },
+            //    { ' ', ' ', ' ', 'x' }
+            //};
+
             var winnerSymbol = Play(board, 'x', 'o', false);
             string winner;
             switch (winnerSymbol)
@@ -94,6 +104,7 @@ namespace TicTacToe
             var winnerSymbol = IsGameOver(board);
             if (winnerSymbol == 'n' && !IsBoardFull(board))
             {
+                // comment this if statement for a AI vs AI game
                 if (!isSimulation && currentPlayerSymbol == 'x')
                 {
                     return PlayerMove(board, currentPlayerSymbol, otherPlayerSymbol);
