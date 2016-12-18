@@ -13,6 +13,7 @@ namespace Naive_Bayes
         {
             const string FileName = "../../../data.txt";
             var data = ReadData(FileName);
+            data = ProcessData(data);
             var splitData = SplitData(data);
             double success = 0;
             foreach (var testData in splitData)
@@ -21,6 +22,50 @@ namespace Naive_Bayes
             }
 
             Console.WriteLine("Average: {0:F2}%", success / (double)splitData.Count);
+        }
+
+        private static IList<string[]> ProcessData(IList<string[]> data)
+        {
+            var answers = new List<Dictionary<string, Dictionary<string, int>>>();
+            for (int i = 0; i < data.Count; i++)
+            {
+                var individual = data[i];
+                var individualClass = individual.Last();
+                for (int j = 0; j < individual.Count() - 1; j++)
+                {
+                    if (answers.Count < j + 1)
+                        answers.Add(new Dictionary<string, Dictionary<string, int>>());
+
+                    if (!answers[j].ContainsKey(individualClass))
+                        answers[j][individualClass] = new Dictionary<string, int>();
+
+                    var individualCurrentQuestionAnswer = individual[j];
+                    if (individualCurrentQuestionAnswer != "?")
+                    {
+                        if (!answers[j][individualClass].ContainsKey(individualCurrentQuestionAnswer))
+                            answers[j][individualClass][individualCurrentQuestionAnswer] = 1;
+                        else
+                            answers[j][individualClass][individualCurrentQuestionAnswer] += 1;
+                    }
+                }
+            }
+
+            for (int i = 0; i < data.Count; i++)
+            {
+                var individual = data[i];
+                var individualClass = individual.Last();
+                for (int j = 0; j < individual.Count() - 1; j++)
+                {
+                    var individualCurrentQuestionAnswer = individual[j];
+                    if (individualCurrentQuestionAnswer == "?")
+                    {
+                        var commonAnswer = answers[j][individualClass].OrderByDescending(x => x.Value).First();
+                        individual[j] = commonAnswer.Key;
+                    }
+                }
+            }
+
+            return data;
         }
 
         private static double Validate(IList<string[]> testData, List<IList<string[]>> splitData)
