@@ -42,8 +42,6 @@ namespace Frogs
             if (IsFinalStep(currentStep))
                 return true;
 
-            var result = false;
-
             for (int i = 0; i < currentStep.Length; i++)
             {
                 if (currentStep[i] == '>')

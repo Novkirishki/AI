@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace N_Queens
@@ -18,57 +19,85 @@ namespace N_Queens
         private static void SolveQueens(int queensCount)
         {
             var queens = GetQueens(queensCount);
-            var maxLoops = queensCount * queensCount;
+            var maxLoops = queensCount * 10;
+            var allQueensConflicts = new Dictionary<Queen, KeyValuePair<int, List<Queen>>>();
+            var calculateAllConflicts = true;
 
             while (true)
             {
-                for (int i = 0; i < queensCount; i++)
+                if (calculateAllConflicts)
                 {
-                    var currentQueen = queens[i];
-                    var currentQueenConflicts = CalcConflicts(currentQueen, queens);
-                    if (currentQueenConflicts == 0)
-                        continue;
+                    allQueensConflicts.Clear();
+                    CalculateConflictingQueens(queens, queens, allQueensConflicts);
+                    calculateAllConflicts = false;
+                }
 
-                    var minNumberOfConflicts = currentQueenConflicts;
-                    var minNumberOfConflictsY = new List<int>();
-                    minNumberOfConflictsY.Add(currentQueen.Y);
-                    var initialY = currentQueen.Y;
+                var maxConflicts = allQueensConflicts.OrderByDescending(x => x.Value.Key).First().Value.Key;
+                var allQueensWithMaxConflicts = allQueensConflicts.Where(x => x.Value.Key == maxConflicts).ToList();
+                var currentQueenData = allQueensWithMaxConflicts[rnd.Next(allQueensWithMaxConflicts.Count)];
+                var currentQueen = currentQueenData.Key;
+                var currentQueenConflicts = currentQueenData.Value.Key;
+                if (currentQueenConflicts == 0)
+                {
+                    PrintQueens(queens);
+                    return;
+                }
 
-                    for (int j = 0; j < queensCount; j++)
+                var minNumberOfConflicts = currentQueenConflicts;
+                var minNumberOfConflictsData = new List<KeyValuePair<int, List<Queen>>>();
+                var initialY = currentQueen.Y;
+
+                for (int j = 0; j < queensCount; j++)
+                {
+                    if (j != initialY)
                     {
-                        if (j != initialY)
+                        currentQueen.Y = j;
+                        var conflictingQueens = new List<Queen>();
+                        var conflicts = CalcConflicts(currentQueen, queens, out conflictingQueens);
+                        if (conflicts < minNumberOfConflicts)
                         {
-                            currentQueen.Y = j;
-                            var conflicts = CalcConflicts(currentQueen, queens);
-                            if (conflicts < minNumberOfConflicts)
-                            {
-                                minNumberOfConflicts = conflicts;
-                                minNumberOfConflictsY.Clear();
-                                minNumberOfConflictsY.Add(j);
-                            }
-                            else if (conflicts == minNumberOfConflicts)
-                            {
-                                minNumberOfConflictsY.Add(j);
-                            }
+                            minNumberOfConflicts = conflicts;
+                            minNumberOfConflictsData.Clear();
+                            minNumberOfConflictsData.Add(new KeyValuePair<int, List<Queen>>(j, conflictingQueens));
+                        }
+                        else if (conflicts == minNumberOfConflicts)
+                        {
+                            minNumberOfConflictsData.Add(new KeyValuePair<int, List<Queen>>(j, conflictingQueens));
                         }
                     }
-
-                    currentQueen.Y = minNumberOfConflictsY[rnd.Next(minNumberOfConflictsY.Count)];
-
-                    if (queens.Where(x => CalcConflicts(x, queens) != 0).Count() == 0)
-                    {
-                        PrintQueens(queens);
-                        return;
-                    }
                 }
+
+                // if we cannot move the queen so that there are fewer or the same amount of conflicts
+                if (minNumberOfConflictsData.Count == 0)
+                {
+                    continue;
+                }
+                var currentQueenChangeData = minNumberOfConflictsData[rnd.Next(minNumberOfConflictsData.Count)];
+                currentQueen.Y = currentQueenChangeData.Key;
+
+                // update allQueensConflicts
+                allQueensConflicts[currentQueen] = new KeyValuePair<int, List<Queen>>(minNumberOfConflicts, currentQueenChangeData.Value);
+                CalculateConflictingQueens(currentQueenChangeData.Value, queens, allQueensConflicts);
+                CalculateConflictingQueens(currentQueenData.Value.Value, queens, allQueensConflicts);
 
                 // if there is a deadlock - reset the board and try again
                 maxLoops--;
                 if (maxLoops < 0)
                 {
-                    maxLoops = queensCount * queensCount;
+                    maxLoops = queensCount * 10;
                     queens = GetQueens(queensCount);
+                    calculateAllConflicts = true;
                 }
+            }
+        }
+
+        private static void CalculateConflictingQueens(List<Queen> queensToCalc, List<Queen> allQueens, Dictionary<Queen, KeyValuePair<int, List<Queen>>> queensConflicts)
+        {
+            foreach (var queen in queensToCalc)
+            {
+                var conflictingQueens = new List<Queen>();
+                var queenConflicts = CalcConflicts(queen, allQueens, out conflictingQueens);
+                queensConflicts[queen] = new KeyValuePair<int, List<Queen>>(queenConflicts, conflictingQueens);
             }
         }
 
@@ -80,7 +109,7 @@ namespace N_Queens
                 var queen = new Queen
                 {
                     X = i,
-                    Y = 0,
+                    Y = rnd.Next(queensCount),
                 };
 
                 queens.Add(queen);
@@ -99,42 +128,61 @@ namespace N_Queens
             }
         }
 
-        private static int CalcConflicts(Queen queen, List<Queen> queens)
+        private static int CalcConflicts(Queen queen, List<Queen> queens, out List<Queen> conflictingQueens)
         {
             var conflicts = new HashSet<int>();
+            conflictingQueens = new List<Queen>();
             for (int i = 0; i < queens.Count; i++)
             {
                 var other = queens[i];
                 if (queen.Equals(other))
                     continue;
 
-                if (queen.X == other.X && queen.Y > other.Y)
-                    conflicts.Add(1);
-
-                if (queen.X == other.X && queen.Y > other.Y)
-                    conflicts.Add(2);
-
                 if (queen.X < other.X && queen.Y == other.Y)
-                    conflicts.Add(3);
+                {
+                    conflictingQueens.Add(other);
+                    conflicts.Add(1);
+                    continue;
+                }
 
                 if (queen.X > other.X && queen.Y == other.Y)
-                    conflicts.Add(4);
+                {
+                    conflictingQueens.Add(other);
+                    conflicts.Add(2);
+                    continue;
+                }
 
                 var hasDiagonalConflict = Math.Abs(queen.X - other.X) == Math.Abs(queen.Y - other.Y);
 
                 if (hasDiagonalConflict && queen.Y > other.Y && queen.X > other.X)
-                    conflicts.Add(5);
+                {
+                    conflictingQueens.Add(other);
+                    conflicts.Add(3);
+                    continue;
+                }
 
                 if (hasDiagonalConflict && queen.Y < other.Y && queen.X > other.X)
-                    conflicts.Add(6);
+                {
+                    conflictingQueens.Add(other);
+                    conflicts.Add(4);
+                    continue;
+                }
 
                 if (hasDiagonalConflict && queen.Y > other.Y && queen.X < other.X)
-                    conflicts.Add(7);
+                {
+                    conflictingQueens.Add(other);
+                    conflicts.Add(5);
+                    continue;
+                }
 
                 if (hasDiagonalConflict && queen.Y < other.Y && queen.X < other.X)
-                    conflicts.Add(8);
+                {
+                    conflictingQueens.Add(other);
+                    conflicts.Add(6);
+                    continue;
+                }
             }
-            
+
             return conflicts.Count();
         }
 
